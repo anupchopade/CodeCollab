@@ -25,32 +25,6 @@ import { useAuth } from './context/AuthContext';
 // Styles
 import './index.css';
 
-/**
- * PublicRoute Component
- * Redirects authenticated users away from auth pages (login/register)
- * to prevent them from seeing login form when already logged in
- */
-function PublicRoute({ children }) {
-  const { user, loading } = useAuth();
-
-  // Show loading spinner while checking authentication status
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loading message="Checking authentication..." />
-      </div>
-    );
-  }
-
-  // If user is already authenticated, redirect to dashboard
-  if (user) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  // If not authenticated, show the requested page (login/register)
-  return children;
-}
-
 function App() {
   return (
     <ErrorBoundary>
@@ -149,6 +123,32 @@ function App() {
       </AuthProvider>
     </ErrorBoundary>
   );
+}
+
+/**
+ * PublicRoute Component
+ * Redirects authenticated users away from auth pages (login/register)
+ * to prevent them from seeing login form when already logged in
+ */
+function PublicRoute({ children }) {
+  const { user, loading } = useAuth();
+
+  // Show loading spinner while checking authentication status
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loading message="Checking authentication..." />
+      </div>
+    );
+  }
+
+  // If user is already authenticated, redirect to dashboard
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // If not authenticated, show the requested page (login/register)
+  return children;
 }
 
 export default App;

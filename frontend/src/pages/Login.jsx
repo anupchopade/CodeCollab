@@ -15,10 +15,7 @@ function Login() {
     setError('');
     
     try {
-      // Simulate login - replace with actual API call
-      const token = 'mock-token-' + Date.now();
-      const userData = { id: 1, name: "John Doe", email: formData.email };
-      login(token, userData);
+      await login(formData.email, formData.password);
       navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');
@@ -72,5 +69,3 @@ function Login() {
     </div>
   );
 }
-
-export default Login;
