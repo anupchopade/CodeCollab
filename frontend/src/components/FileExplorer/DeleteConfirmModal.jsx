@@ -1,5 +1,5 @@
 import React from "react";
-import { Button } from "@/components/ui/button";
+import Button from "../UI/Button";
 
 const DeleteConfirmModal = ({ isOpen, onClose, onConfirm }) => {
   if (!isOpen) return null;
@@ -11,8 +11,8 @@ const DeleteConfirmModal = ({ isOpen, onClose, onConfirm }) => {
         <p className="mb-4">Are you sure you want to delete this item? This action cannot be undone.</p>
         
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button variant="destructive" onClick={onConfirm}>Delete</Button>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="danger" onClick={onConfirm}>Delete</Button>
         </div>
       </div>
     </div>

@@ -1,30 +1,29 @@
-import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Users, Clock } from "lucide-react";
 
 const ProjectCard = ({ project, onClick }) => {
   return (
-    <Card 
+    <div 
       onClick={() => onClick(project.id)}
-      className="cursor-pointer hover:shadow-lg transition-all rounded-2xl"
+      className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all"
     >
-      <CardHeader>
-        <h3 className="text-lg font-semibold">{project.name}</h3>
-        <p className="text-sm text-muted-foreground">{project.description}</p>
-      </CardHeader>
-      <CardContent className="flex items-center justify-between text-sm">
-        <div className="flex items-center gap-2">
+      <div className="mb-3">
+        <h3 className="text-lg font-semibold text-gray-900">{project.name}</h3>
+        <p className="text-sm text-gray-600">{project.description}</p>
+      </div>
+      <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center gap-2 text-gray-600">
           <Users size={16} />
           {project.collaborators?.length || 0}
         </div>
-        <div className="flex items-center gap-2 text-muted-foreground">
+        <div className="flex items-center gap-2 text-gray-500">
           <Clock size={16} />
           {project.lastModified}
         </div>
-      </CardContent>
-      <CardFooter>
+      </div>
+      <div className="mt-3 pt-3 border-t border-gray-100">
         <span className="text-xs text-blue-600">Open Project →</span>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 };
 

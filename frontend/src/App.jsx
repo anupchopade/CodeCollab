@@ -1,114 +1,154 @@
-import React, { useState } from "react";
-import { AuthProvider, useAuth } from "./context/AuthContext";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 
-import ThemeToggle from "./components/UI/ThemeToggle";
-import Button from "./components/UI/Button";
-import Toast from "./components/UI/Toast";
+// Context Providers (Phase 1 only)
+import { AuthProvider } from './context/AuthContext';
+import { ProjectProvider } from './context/ProjectContext';
 
-import LoginForm from "./components/Auth/LoginForm";
-import RegisterForm from "./components/Auth/RegisterForm";
-import UserProfile from "./components/Auth/UserProfile";
+// Pages
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
+import Editor from './pages/Editor';
+import NotFound from './pages/NotFound';
 
-const Tabs = ({ active, onChange }) => (
-  <div className="flex gap-2 rounded-xl bg-white/70 dark:bg-gray-900/60 backdrop-blur border border-gray-200 dark:border-gray-800 p-1 w-full max-w-md mx-auto">
-    {[
-      { key: "login", label: "Login" },
-      { key: "register", label: "Register" },
-      { key: "profile", label: "Profile" },
-    ].map((t) => (
-      <button
-        key={t.key}
-        onClick={() => onChange(t.key)}
-        className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition
-        ${active === t.key
-          ? "bg-blue-600 text-white shadow"
-          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"}`}
-      >
-        {t.label}
-      </button>
-    ))}
-  </div>
-);
+// Components
+import AuthGuard from './components/Auth/AuthGuard';
+import ErrorBoundary from './components/Common/ErrorBoundary';
+import Loading from './components/UI/Loading';
 
-const DemoScreen = () => {
-  const [tab, setTab] = useState("login");
-  const [toast, setToast] = useState(null);
-  const { user, logout } = useAuth();
+// Hooks
+import { useAuth } from './context/AuthContext';
 
-  const handleSuccess = (u, action = "Signed in") => {
-    setToast({ message: `${action} as ${u?.email}`, type: "success" });
-    setTab("profile");
-  };
+// Styles
+import './index.css';
 
+/**
+ * PublicRoute Component
+ * Redirects authenticated users away from auth pages (login/register)
+ * to prevent them from seeing login form when already logged in
+ */
+function PublicRoute({ children }) {
+  const { user, loading } = useAuth();
+
+  // Show loading spinner while checking authentication status
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loading message="Checking authentication..." />
+      </div>
+    );
+  }
+
+  // If user is already authenticated, redirect to dashboard
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // If not authenticated, show the requested page (login/register)
+  return children;
+}
+
+function App() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
-      <header className="sticky top-0 z-10 border-b border-gray-200/70 dark:border-gray-800/70 bg-white/70 dark:bg-gray-950/70 backdrop-blur">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-blue-600" />
-            <h1 className="text-lg font-semibold">CodeCollab – Auth Demo</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            {user && (
-              <Button variant="secondary" size="sm" onClick={logout}>
-                Logout
-              </Button>
-            )}
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
+    <ErrorBoundary>
+      <AuthProvider>
+        <ProjectProvider>
+          <Router>
+            <div className="App">
+              {/* Toast Notifications for user feedback */}
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  duration: 4000,
+                  style: {
+                    background: '#374151',
+                    color: '#fff',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                  },
+                  success: {
+                    duration: 3000,
+                    iconTheme: {
+                      primary: '#10b981',
+                      secondary: '#ffffff',
+                    },
+                  },
+                  error: {
+                    duration: 5000,
+                    iconTheme: {
+                      primary: '#ef4444',
+                      secondary: '#ffffff',
+                    },
+                  },
+                  loading: {
+                    iconTheme: {
+                      primary: '#6366f1',
+                      secondary: '#ffffff',
+                    },
+                  },
+                }}
+              />
 
-      <main className="max-w-6xl mx-auto px-4 py-10">
-        <Tabs active={tab} onChange={setTab} />
+              {/* Main Application Routes */}
+              <Routes>
+                {/* Public Routes */}
+                <Route 
+                  path="/" 
+                  element={<Home />} 
+                />
+                
+                <Route 
+                  path="/login" 
+                  element={
+                    <PublicRoute>
+                      <Login />
+                    </PublicRoute>
+                  } 
+                />
+                
+                <Route 
+                  path="/register" 
+                  element={
+                    <PublicRoute>
+                      <Register />
+                    </PublicRoute>
+                  } 
+                />
 
-        <div className="mt-8">
-          {tab === "login" && (
-            <LoginForm onSuccess={(u) => handleSuccess(u, "Signed in")} />
-          )}
+                {/* Protected Routes */}
+                <Route 
+                  path="/dashboard" 
+                  element={
+                    <AuthGuard>
+                      <Dashboard />
+                    </AuthGuard>
+                  } 
+                />
+                
+                <Route 
+                  path="/editor/:projectId" 
+                  element={
+                    <AuthGuard>
+                      <Editor />
+                    </AuthGuard>
+                  } 
+                />
 
-          {tab === "register" && (
-            <RegisterForm onSuccess={(u) => handleSuccess(u, "Registered")} />
-          )}
-
-          {tab === "profile" && (
-            user ? (
-              <UserProfile />
-            ) : (
-              <div className="w-full max-w-md mx-auto text-center rounded-2xl bg-white dark:bg-gray-900 shadow-xl border border-gray-200 dark:border-gray-800 p-8">
-                <p className="text-gray-600 dark:text-gray-400">
-                  You’re not logged in. Choose a tab above to sign in or create an account.
-                </p>
-                <div className="mt-6 flex gap-3 justify-center">
-                  <Button onClick={() => setTab("login")}>Go to Login</Button>
-                  <Button variant="secondary" onClick={() => setTab("register")}>
-                    Go to Register
-                  </Button>
-                </div>
-              </div>
-            )
-          )}
-        </div>
-      </main>
-
-      {toast && (
-        <div className="fixed bottom-4 right-4">
-          <Toast
-            message={toast.message}
-            type={toast.type}
-            onClose={() => setToast(null)}
-            duration={2500}
-          />
-        </div>
-      )}
-    </div>
+                {/* Catch-all route for 404 */}
+                <Route 
+                  path="*" 
+                  element={<NotFound />} 
+                />
+              </Routes>
+            </div>
+          </Router>
+        </ProjectProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
-};
-
-const App = () => (
-  <AuthProvider>
-    <DemoScreen />
-  </AuthProvider>
-);
+}
 
 export default App;

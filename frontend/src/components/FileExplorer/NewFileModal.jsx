@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
+import Button from "../UI/Button";
 
 const NewFileModal = ({ isOpen, onClose, onCreate }) => {
   const [name, setName] = useState("");
@@ -36,8 +36,8 @@ const NewFileModal = ({ isOpen, onClose, onCreate }) => {
         </select>
 
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSubmit}>Create</Button>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" onClick={handleSubmit}>Create</Button>
         </div>
       </div>
     </div>

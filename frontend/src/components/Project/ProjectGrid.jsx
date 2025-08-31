@@ -1,6 +1,6 @@
 import { useState } from "react";
 import ProjectCard from "./ProjectCard";
-import { Input } from "@/components/ui/input";
+import Input from "../UI/Input";
 
 const ProjectGrid = ({ projects, onSelect }) => {
   const [search, setSearch] = useState("");
