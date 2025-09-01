@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import connectDB from './src/config/database.js';
 import authRoutes from './src/routes/auth.js';
-
+import projectRoutes from './src/routes/projects.js';
 
 dotenv.config();
 const app=express();
@@ -21,7 +21,7 @@ app.use(express.urlencoded({extended:true}));
 
 // Routes
 app.use('/api/auth', authRoutes);
-
+app.use('/api/projects', projectRoutes);
 
 app.get('/',(req,res)=>{
     res.json({message:"Codecollab  API is running"});
