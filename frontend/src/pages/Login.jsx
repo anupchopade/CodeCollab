@@ -15,8 +15,12 @@ function Login() {
     setError('');
     
     try {
-      await login(formData.email, formData.password);
-      navigate('/dashboard');
+      const result = await login({ email: formData.email, password: formData.password });
+      if (result.success) {
+        navigate('/dashboard');
+      } else {
+        setError(result.error || 'Login failed. Please try again.');
+      }
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');
     } finally {

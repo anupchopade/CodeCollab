@@ -69,8 +69,17 @@ const RegisterForm = ({ onSuccess, onError, redirectTo = "/dashboard" }) => {
       setSubmitting(true);
       setServerError("");
       if (registerUser) {
-        const user = await registerUser(form.email, form.password, { redirectTo });
-        onSuccess?.(user);
+        const result = await registerUser({ 
+          username: form.email.split('@')[0], // Use email prefix as username
+          email: form.email, 
+          password: form.password 
+        });
+        if (result.success) {
+          onSuccess?.(result.user);
+        } else {
+          setServerError(result.error);
+          onError?.(result.error);
+        }
       } else {
         await new Promise((r) => setTimeout(r, 800));
         onSuccess?.({ email: form.email });

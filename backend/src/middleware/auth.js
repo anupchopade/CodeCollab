@@ -7,7 +7,7 @@ export const authenticateToken=async (req,res,next)=>{
         const authHeader=req.headers['authorization'];
         const token=authHeader && authHeader.split(' ')[1];//bearer token
         if(!token){
-            return resizeBy.status(401).json({message:'No token provided'});
+            return res.status(401).json({message:'No token provided'});
         }
         //verify tokennn
         const decoded=jwt.verify(token,process.env.JWT_SECRET);

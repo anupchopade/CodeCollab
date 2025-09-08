@@ -1,9 +1,15 @@
 import { Users, Clock } from "lucide-react";
 
 const ProjectCard = ({ project, onClick }) => {
+  const handleClick = () => {
+    if (onClick && typeof onClick === 'function') {
+      onClick(project._id || project.id);
+    }
+  };
+
   return (
     <div 
-      onClick={() => onClick(project.id)}
+      onClick={handleClick}
       className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all"
     >
       <div className="mb-3">

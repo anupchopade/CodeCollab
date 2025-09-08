@@ -41,8 +41,13 @@ const LoginForm = ({
       setSubmitting(true);
       setServerError("");
       if (login) {
-        const user = await login(form.email, form.password, { remember: form.remember, redirectTo });
-        onSuccess?.(user);
+        const result = await login({ email: form.email, password: form.password });
+        if (result.success) {
+          onSuccess?.(result.user);
+        } else {
+          setServerError(result.error);
+          onError?.(result.error);
+        }
       } else {
         // Fallback if you don't have AuthContext wired yet
         await new Promise((r) => setTimeout(r, 800));

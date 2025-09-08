@@ -1,9 +1,9 @@
 // src/components/Editor/EditorToolbar.jsx
 import React from "react";
-import { Save, Users, Cloud } from "lucide-react";
+import { Save, Users, Cloud, Plus } from "lucide-react";
 import Button from "../UI/Button";
 
-const EditorToolbar = ({ onSave, status = "Saved", collaborators }) => {
+const EditorToolbar = ({ onSave, onCreateFile, status = "Saved", hasUnsavedChanges = false, collaborators }) => {
   return (
     <div className="flex items-center justify-between p-2 border-b bg-gray-50 dark:bg-gray-900">
       <div className="flex items-center gap-2">
@@ -11,7 +11,13 @@ const EditorToolbar = ({ onSave, status = "Saved", collaborators }) => {
           <Save size={16} className="mr-1" />
           Save
         </Button>
-        <span className="text-sm text-gray-500">{status}</span>
+        {onCreateFile && (
+          <Button variant="secondary" size="sm" onClick={() => onCreateFile('newfile.js')}>
+            <Plus size={16} className="mr-1" />
+            New File
+          </Button>
+        )}
+        <span className="text-sm text-gray-500">{hasUnsavedChanges ? "Unsaved" : status}</span>
       </div>
 
       <div className="flex items-center gap-3">

@@ -120,7 +120,7 @@ function Dashboard() {
         ) : (
           <ProjectGrid 
             projects={filteredProjects}
-            onProjectClick={(project) => navigate(`/editor/${project._id}`)}
+            onSelect={(projectId) => navigate(`/editor/${projectId}`)}
           />
         )}
       </main>

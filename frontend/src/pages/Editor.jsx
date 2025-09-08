@@ -13,12 +13,15 @@ function Editor() {
   const { user } = useAuth();
   const { 
     currentProject, 
+    files,
     loadProject, 
     activeFile, 
     setActiveFile, 
     openFiles,
+    setOpenFiles,
     updateFileContent,
-    saveFile 
+    saveFile,
+    createFile
   } = useProject();
   
   const [isLoading, setIsLoading] = useState(true);
@@ -52,7 +55,7 @@ function Editor() {
 
     const autoSaveTimer = setTimeout(async () => {
       try {
-        await saveFile(activeFile.id, editorContent);
+        await saveFile(activeFile._id, editorContent);
         setUnsavedChanges(false);
       } catch (error) {
         console.error('Auto-save failed:', error);
@@ -65,20 +68,89 @@ function Editor() {
   const handleEditorChange = useCallback((value) => {
     setEditorContent(value);
     setUnsavedChanges(true);
-    updateFileContent(activeFile.id, value);
+    updateFileContent(activeFile._id, value);
   }, [activeFile, updateFileContent]);
 
   const handleFileSelect = useCallback((file) => {
+    // Debug: Check the selected file
+    console.log('Selected file:', file);
+    console.log('File ID:', file._id);
+    
     setActiveFile(file);
     setEditorContent(file.content || '');
     setUnsavedChanges(false);
+    
+    // Add file to open files if not already open
+    setOpenFiles(prev => {
+      const isAlreadyOpen = prev.some(f => f._id === file._id);
+      if (!isAlreadyOpen) {
+        return [...prev, file];
+      }
+      return prev;
+    });
   }, [setActiveFile]);
+
+  const handleCreateFile = useCallback(async (fileName) => {
+    if (!currentProject || !fileName) return;
+    
+    try {
+      const newFile = await createFile({
+        name: fileName,
+        content: '',
+        path: `/${fileName}`, // Add path field
+        projectId: currentProject._id,
+        language: getLanguageFromExtension(fileName)
+      });
+      
+      // Debug: Check the created file
+      console.log('Created file:', newFile);
+      console.log('File ID:', newFile._id);
+      
+      // Add to open files and set as active
+      setOpenFiles(prev => [...prev, newFile]);
+      setActiveFile(newFile);
+      setEditorContent('');
+      setUnsavedChanges(false);
+    } catch (error) {
+      console.error('Failed to create file:', error);
+    }
+  }, [currentProject, createFile]);
+
+  // Helper function to determine language from file extension
+  const getLanguageFromExtension = (fileName) => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    const languageMap = {
+      'js': 'javascript',
+      'jsx': 'javascript',
+      'ts': 'typescript',
+      'tsx': 'typescript',
+      'py': 'python',
+      'java': 'java',
+      'cpp': 'cpp',
+      'c': 'c',
+      'html': 'html',
+      'css': 'css',
+      'json': 'json',
+      'md': 'markdown',
+      'txt': 'text'
+    };
+    return languageMap[extension] || 'text';
+  };
 
   const handleSave = async () => {
     if (!activeFile || !unsavedChanges) return;
     
+    // Debug: Check if activeFile has proper _id
+    console.log('Saving file:', activeFile);
+    console.log('File ID:', activeFile._id);
+    
+    if (!activeFile._id) {
+      console.error('No file ID found! Cannot save file.');
+      return;
+    }
+    
     try {
-      await saveFile(activeFile.id, editorContent);
+      await saveFile(activeFile._id, editorContent);
       setUnsavedChanges(false);
     } catch (error) {
       console.error('Save failed:', error);
@@ -127,6 +199,7 @@ function Editor() {
         <div className="ml-auto flex items-center space-x-2">
           <EditorToolbar 
             onSave={handleSave}
+            onCreateFile={handleCreateFile}
             hasUnsavedChanges={unsavedChanges}
           />
           <button 
@@ -145,8 +218,10 @@ function Editor() {
             <div className="h-full overflow-auto">
               <FileTree 
                 project={currentProject}
+                files={files || []}
                 activeFile={activeFile}
                 onFileSelect={handleFileSelect}
+                onCreateFile={handleCreateFile}
               />
             </div>
           </aside>
@@ -161,6 +236,10 @@ function Editor() {
             onFileSelect={handleFileSelect}
             onFileClose={(fileId) => {
               // Handle file closing logic
+              setOpenFiles(prev => prev.filter(f => f._id !== fileId));
+              if (activeFile && activeFile._id === fileId) {
+                setActiveFile(null);
+              }
             }}
           />
 

@@ -1,31 +1,74 @@
 // src/components/Editor/MonacoEditor.jsx
-import React, { useRef, useEffect } from "react";
-import * as monaco from "monaco-editor";
+import React from "react";
+import Editor from '@monaco-editor/react';
 
 const MonacoEditor = ({ value, language = "javascript", theme = "vs-dark", onChange }) => {
-  const editorRef = useRef(null);
-  const containerRef = useRef(null);
+  const handleEditorChange = (newValue) => {
+    onChange?.(newValue);
+  };
 
-  useEffect(() => {
-    if (containerRef.current) {
-      editorRef.current = monaco.editor.create(containerRef.current, {
-        value,
-        language,
-        theme,
-        automaticLayout: true,
-        minimap: { enabled: false },
-        fontSize: 14,
-      });
+  const handleEditorDidMount = (editor, monaco) => {
+    // Configure editor options for full features
+    editor.updateOptions({
+      fontSize: 14,
+      minimap: { enabled: false },
+      automaticLayout: true,
+      // Enable all language features
+      quickSuggestions: true,
+      suggestOnTriggerCharacters: true,
+      acceptSuggestionOnEnter: "on",
+      tabCompletion: "on",
+      wordBasedSuggestions: "on",
+      parameterHints: { enabled: true },
+      hover: { enabled: true },
+      folding: true,
+      foldingStrategy: "indentation",
+      showFoldingControls: "always",
+      // Enable language services
+      semanticHighlighting: { enabled: true },
+      bracketPairColorization: { enabled: true },
+      guides: {
+        bracketPairs: true,
+        indentation: true
+      }
+    });
+  };
 
-      editorRef.current.onDidChangeModelContent(() => {
-        onChange?.(editorRef.current.getValue());
-      });
-    }
-
-    return () => editorRef.current?.dispose();
-  }, []);
-
-  return <div ref={containerRef} className="h-full w-full border rounded-lg" />;
+  return (
+    <div className="h-full w-full border rounded-lg">
+      <Editor
+        height="100%"
+        language={language}
+        theme={theme}
+        value={value || ''}
+        onChange={handleEditorChange}
+        onMount={handleEditorDidMount}
+        options={{
+          fontSize: 14,
+          minimap: { enabled: false },
+          automaticLayout: true,
+          // Enable all language features
+          quickSuggestions: true,
+          suggestOnTriggerCharacters: true,
+          acceptSuggestionOnEnter: "on",
+          tabCompletion: "on",
+          wordBasedSuggestions: "on",
+          parameterHints: { enabled: true },
+          hover: { enabled: true },
+          folding: true,
+          foldingStrategy: "indentation",
+          showFoldingControls: "always",
+          // Enable language services
+          semanticHighlighting: { enabled: true },
+          bracketPairColorization: { enabled: true },
+          guides: {
+            bracketPairs: true,
+            indentation: true
+          }
+        }}
+      />
+    </div>
+  );
 };
 
 export default MonacoEditor;

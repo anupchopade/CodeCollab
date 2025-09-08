@@ -19,7 +19,7 @@ const ProjectGrid = ({ projects, onSelect }) => {
       />
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
         {filtered.map((project) => (
-          <ProjectCard key={project.id} project={project} onClick={onSelect} />
+          <ProjectCard key={project._id || project.id} project={project} onClick={onSelect} />
         ))}
       </div>
     </div>

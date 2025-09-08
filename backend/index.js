@@ -1,13 +1,22 @@
+import dotenv from "dotenv";
+dotenv.config();
+
+// Debug: Check if environment variables are loaded
+console.log('Environment variables loaded:');
+console.log('PORT:', process.env.PORT);
+console.log('MONGODB_URI:', process.env.MONGODB_URI ? 'Loaded' : 'NOT LOADED');
+console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'Loaded' : 'NOT LOADED');
+
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
+
 import mongoose from "mongoose";
 import connectDB from './src/config/database.js';
 import authRoutes from './src/routes/auth.js';
 import projectRoutes from './src/routes/projects.js';
 import fileRoutes from './src/routes/files.js';
 
-dotenv.config();
+
 const app=express();
 const PORT=process.env.PORT || 5000;
 
