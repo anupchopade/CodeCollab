@@ -1,13 +1,27 @@
 import File from '../models/File.js';
 import Project from '../models/Project.js';
 
+// Socket.io instance (will be injected)
+let io = null;
+
+// Function to set socket.io instance
+export const setSocketIO = (socketIO) => {
+  console.log("🔍 [DEBUG] setSocketIO called with:", socketIO ? "Socket instance" : "null");
+  io = socketIO;
+  console.log("🔍 [DEBUG] io variable set to:", io ? "Socket instance" : "null");
+};
+
 // Create a new file
 export const createFile = async (req, res) => {
   try {
+    console.log("🔍 [DEBUG] createFile called with:", req.body);
+    console.log("🔍 [DEBUG] Current io instance:", io ? "EXISTS" : "NULL");
     const { name, content, path, language, projectId } = req.body;
     const userId = req.user._id;
+    console.log("🔍 [DEBUG] Extracted data:", { name, content, path, language, projectId, userId });
 
     // Verify project exists and user has access
+    console.log("🔍 [DEBUG] Looking for project:", projectId);
     const project = await Project.findOne({
       _id: projectId,
       $or: [
@@ -15,22 +29,28 @@ export const createFile = async (req, res) => {
         { 'collaborators.user': userId }
       ]
     });
+    console.log("🔍 [DEBUG] Project found:", project ? "YES" : "NO");
 
     if (!project) {
+      console.log("❌ [DEBUG] Project not found or access denied");
       return res.status(404).json({ message: 'Project not found or access denied' });
     }
 
     // Check if file already exists at this path
+    console.log("🔍 [DEBUG] Checking for existing file at path:", path);
     const existingFile = await File.findOne({
       project: projectId,
       path: path
     });
+    console.log("🔍 [DEBUG] Existing file found:", existingFile ? "YES" : "NO");
 
     if (existingFile) {
+      console.log("❌ [DEBUG] File already exists at this path");
       return res.status(400).json({ message: 'File already exists at this path' });
     }
 
     // Create new file
+    console.log("🔍 [DEBUG] Creating new file object");
     const file = new File({
       name,
       content: content || '',
@@ -41,21 +61,60 @@ export const createFile = async (req, res) => {
       lastModifiedBy: userId,
       size: content ? content.length : 0
     });
+    console.log("🔍 [DEBUG] File object created:", file);
 
+    console.log("🔍 [DEBUG] Saving file to database");
     await file.save();
+    console.log("🔍 [DEBUG] File saved successfully with ID:", file._id);
 
     // Add file to project
+    console.log("🔍 [DEBUG] Adding file to project");
     await Project.findByIdAndUpdate(projectId, {
       $push: { files: file._id },
       lastActivity: new Date()
     });
+    console.log("🔍 [DEBUG] File added to project successfully");
 
+    // Emit real-time file creation event
+    console.log("🔍 [DEBUG] Checking if io instance exists:", io ? "YES" : "NO");
+    if (io) {
+      const roomName = `project-${projectId}`;
+      console.log("🔍 [DEBUG] Emitting to room:", roomName);
+      
+      // Check how many users are in the room
+      const room = io.sockets.adapter.rooms.get(roomName);
+      const roomSize = room ? room.size : 0;
+      console.log("🔍 [DEBUG] Users in room:", roomSize);
+      
+      const eventData = {
+        file: {
+          _id: file._id,
+          name: file.name,
+          path: file.path,
+          language: file.language,
+          content: file.content,
+          size: file.size,
+          createdBy: file.createdBy,
+          createdAt: file.createdAt
+        },
+        projectId,
+        createdBy: userId
+      };
+      console.log("🔍 [DEBUG] Event data:", eventData);
+      
+      io.to(roomName).emit('file:created', eventData);
+      console.log(`📁 [DEBUG] File created event emitted to ${roomSize} users: ${file.name} in project ${projectId} by user ${userId}`);
+    } else {
+      console.log("❌ [DEBUG] No io instance available - cannot emit file:created event");
+    }
+
+    console.log("🔍 [DEBUG] Sending success response");
     res.status(201).json({
       message: 'File created successfully',
       file
     });
   } catch (error) {
-    console.error('Create file error:', error);
+    console.error('❌ [DEBUG] Create file error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
@@ -227,6 +286,17 @@ export const deleteFile = async (req, res) => {
       $pull: { files: fileId },
       lastActivity: new Date()
     });
+
+    // Emit real-time file deletion event
+    if (io) {
+      const roomName = `project-${file.project._id}`;
+      io.to(roomName).emit('file:deleted', {
+        fileId,
+        projectId: file.project._id,
+        deletedBy: userId
+      });
+      console.log(`🗑️ File deleted: ${file.name} in project ${file.project._id} by user ${userId}`);
+    }
 
     res.json({ message: 'File deleted successfully' });
   } catch (error) {

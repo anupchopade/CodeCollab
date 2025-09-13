@@ -138,6 +138,19 @@ export const ProjectProvider = ({ children }) => {
 
   const addFile = useCallback((file) => setFiles((prev) => [...prev, file]), []);
 
+  const refreshProjectFiles = useCallback(async () => {
+    if (!currentProject) return;
+    
+    try {
+      console.log("🔍 [DEBUG] ProjectContext: Refreshing project files for project:", currentProject._id);
+      const projectFiles = await fileService.getProjectFiles(currentProject._id);
+      console.log("🔍 [DEBUG] ProjectContext: Refreshed files:", projectFiles);
+      setFiles(projectFiles);
+    } catch (error) {
+      console.error("❌ [DEBUG] ProjectContext: Error refreshing project files:", error);
+    }
+  }, [currentProject]);
+
   return (
     <ProjectContext.Provider value={{ 
       currentProject,
@@ -159,7 +172,8 @@ export const ProjectProvider = ({ children }) => {
       updateFileContent,
       saveFile,
       deleteFile,
-      addFile 
+      addFile,
+      refreshProjectFiles
     }}>
       {children}
     </ProjectContext.Provider>

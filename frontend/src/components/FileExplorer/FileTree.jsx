@@ -1,12 +1,62 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Plus, File } from "lucide-react";
 import FolderItem from "./FolderItem";
 import FileItem from "./FileItem";
+import { useProject } from "../../context/ProjectContext";
 
 const FileTree = ({ project, files = [], activeFile, onFileSelect, onCreateFile }) => {
   const [expanded, setExpanded] = useState({});
   const [showNewFileInput, setShowNewFileInput] = useState(false);
   const [newFileName, setNewFileName] = useState('');
+  const { refreshProjectFiles } = useProject();
+
+  // Listen for real-time file events
+  useEffect(() => {
+    console.log("🔍 [DEBUG] FileTree: Setting up file event listeners");
+    console.log("🔍 [DEBUG] FileTree: Current project:", project);
+    
+    const handleFileCreated = (event) => {
+      console.log("🔍 [DEBUG] FileTree: handleFileCreated called");
+      const { file, projectId } = event.detail;
+      console.log("🔍 [DEBUG] FileTree: File created event received:", file);
+      console.log("🔍 [DEBUG] FileTree: Event projectId:", projectId);
+      console.log("🔍 [DEBUG] FileTree: Current project ID:", project?._id || project?.id);
+      
+      // Only refresh if it's for the current project
+      if (project && (project._id === projectId || project.id === projectId)) {
+        console.log("🔍 [DEBUG] FileTree: Project IDs match - refreshing file tree");
+        refreshProjectFiles();
+      } else {
+        console.log("🔍 [DEBUG] FileTree: Project IDs don't match - skipping refresh");
+      }
+    };
+
+    const handleFileDeleted = (event) => {
+      console.log("🔍 [DEBUG] FileTree: handleFileDeleted called");
+      const { fileId, projectId } = event.detail;
+      console.log("🔍 [DEBUG] FileTree: File deleted event received:", fileId);
+      
+      // Only refresh if it's for the current project
+      if (project && (project._id === projectId || project.id === projectId)) {
+        console.log("🔍 [DEBUG] FileTree: Project IDs match - refreshing file tree");
+        refreshProjectFiles();
+      } else {
+        console.log("🔍 [DEBUG] FileTree: Project IDs don't match - skipping refresh");
+      }
+    };
+
+    // Add event listeners
+    console.log("🔍 [DEBUG] FileTree: Adding event listeners");
+    window.addEventListener('fileCreated', handleFileCreated);
+    window.addEventListener('fileDeleted', handleFileDeleted);
+    console.log("🔍 [DEBUG] FileTree: Event listeners added");
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('fileCreated', handleFileCreated);
+      window.removeEventListener('fileDeleted', handleFileDeleted);
+    };
+  }, [project, refreshProjectFiles]);
 
   const toggleExpand = (path) => {
     setExpanded((prev) => ({ ...prev, [path]: !prev[path] }));

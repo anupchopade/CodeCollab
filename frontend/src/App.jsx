@@ -2,9 +2,10 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
-// Context Providers (Phase 1 only)
+// Context Providers
 import { AuthProvider } from './context/AuthContext';
 import { ProjectProvider } from './context/ProjectContext';
+import { SocketProvider } from './context/SocketContext'; // Add this import
 
 // Pages
 import Home from './pages/Home';
@@ -30,95 +31,97 @@ function App() {
     <ErrorBoundary>
       <AuthProvider>
         <ProjectProvider>
-          <Router>
-            <div className="App">
-              {/* Toast Notifications for user feedback */}
-              <Toaster
-                position="top-right"
-                toastOptions={{
-                  duration: 4000,
-                  style: {
-                    background: '#374151',
-                    color: '#fff',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                  },
-                  success: {
-                    duration: 3000,
-                    iconTheme: {
-                      primary: '#10b981',
-                      secondary: '#ffffff',
+          <SocketProvider> {/* Add SocketProvider here */}
+            <Router>
+              <div className="App">
+                {/* Toast Notifications for user feedback */}
+                <Toaster
+                  position="top-right"
+                  toastOptions={{
+                    duration: 4000,
+                    style: {
+                      background: '#374151',
+                      color: '#fff',
+                      borderRadius: '8px',
+                      fontSize: '14px',
                     },
-                  },
-                  error: {
-                    duration: 5000,
-                    iconTheme: {
-                      primary: '#ef4444',
-                      secondary: '#ffffff',
+                    success: {
+                      duration: 3000,
+                      iconTheme: {
+                        primary: '#10b981',
+                        secondary: '#ffffff',
+                      },
                     },
-                  },
-                  loading: {
-                    iconTheme: {
-                      primary: '#6366f1',
-                      secondary: '#ffffff',
+                    error: {
+                      duration: 5000,
+                      iconTheme: {
+                        primary: '#ef4444',
+                        secondary: '#ffffff',
+                      },
                     },
-                  },
-                }}
-              />
-
-              {/* Main Application Routes */}
-              <Routes>
-                {/* Public Routes */}
-                <Route 
-                  path="/" 
-                  element={<Home />} 
-                />
-                
-                <Route 
-                  path="/login" 
-                  element={
-                    <PublicRoute>
-                      <Login />
-                    </PublicRoute>
-                  } 
-                />
-                
-                <Route 
-                  path="/register" 
-                  element={
-                    <PublicRoute>
-                      <Register />
-                    </PublicRoute>
-                  } 
+                    loading: {
+                      iconTheme: {
+                        primary: '#6366f1',
+                        secondary: '#ffffff',
+                      },
+                    },
+                  }}
                 />
 
-                {/* Protected Routes */}
-                <Route 
-                  path="/dashboard" 
-                  element={
-                    <AuthGuard>
-                      <Dashboard />
-                    </AuthGuard>
-                  } 
-                />
-                
-                <Route 
-                  path="/editor/:projectId" 
-                  element={
-                    <AuthGuard>
-                      <Editor />
-                    </AuthGuard>
-                  } 
-                />
+                {/* Main Application Routes */}
+                <Routes>
+                  {/* Public Routes */}
+                  <Route 
+                    path="/" 
+                    element={<Home />} 
+                  />
+                  
+                  <Route 
+                    path="/login" 
+                    element={
+                      <PublicRoute>
+                        <Login />
+                      </PublicRoute>
+                    } 
+                  />
+                  
+                  <Route 
+                    path="/register" 
+                    element={
+                      <PublicRoute>
+                        <Register />
+                      </PublicRoute>
+                    } 
+                  />
 
-                {/* Catch-all route for 404 */}
-                <Route 
-                  path="*" 
-                  element={<NotFound />} 
-                />
-              </Routes>
-            </div>
-          </Router>
+                  {/* Protected Routes */}
+                  <Route 
+                    path="/dashboard" 
+                    element={
+                      <AuthGuard>
+                        <Dashboard />
+                      </AuthGuard>
+                    } 
+                  />
+                  
+                  <Route 
+                    path="/editor/:projectId" 
+                    element={
+                      <AuthGuard>
+                        <Editor />
+                      </AuthGuard>
+                    } 
+                  />
+
+                  {/* Catch-all route for 404 */}
+                  <Route 
+                    path="*" 
+                    element={<NotFound />} 
+                  />
+                </Routes>
+              </div>
+            </Router>
+          </SocketProvider> {/* Close SocketProvider here */}
         </ProjectProvider>
       </AuthProvider>
     </ErrorBoundary>

@@ -14,18 +14,18 @@ function Login() {
     setIsLoading(true);
     setError('');
     
-    try {
-      const result = await login({ email: formData.email, password: formData.password });
-      if (result.success) {
-        navigate('/dashboard');
-      } else {
-        setError(result.error || 'Login failed. Please try again.');
+      try {
+        const result = await login({ email: formData.email, password: formData.password });
+        if (result.success) {
+          navigate('/dashboard');
+        } else {
+          setError(result.error || 'Login failed. Please try again.');
+        }
+      } catch (err) {
+        setError(err.message || 'Login failed. Please try again.');
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err) {
-      setError(err.message || 'Login failed. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   return (

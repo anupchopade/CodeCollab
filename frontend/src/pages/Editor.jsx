@@ -6,6 +6,7 @@ import MonacoEditor from '../components/Editor/MonacoEditor';
 import FileTree from '../components/FileExplorer/FileTree';
 import EditorTabs from '../components/Editor/EditorTabs';
 import EditorToolbar from '../components/Editor/EditorToolbar';
+import CollaboratorList from '../components/Editor/CollaboratorList';
 import Loading from '../components/UI/Loading';
 
 function Editor() {
@@ -80,10 +81,10 @@ function Editor() {
     setEditorContent(file.content || '');
     setUnsavedChanges(false);
     
-    // Add file to open files if not already open
+    // Add to open files if not already open
     setOpenFiles(prev => {
-      const isAlreadyOpen = prev.some(f => f._id === file._id);
-      if (!isAlreadyOpen) {
+      const exists = prev.find(f => f._id === file._id);
+      if (!exists) {
         return [...prev, file];
       }
       return prev;
@@ -102,21 +103,15 @@ function Editor() {
         language: getLanguageFromExtension(fileName)
       });
       
-      // Debug: Check the created file
-      console.log('Created file:', newFile);
-      console.log('File ID:', newFile._id);
+      console.log('Created new file:', newFile);
       
-      // Add to open files and set as active
-      setOpenFiles(prev => [...prev, newFile]);
-      setActiveFile(newFile);
-      setEditorContent('');
-      setUnsavedChanges(false);
+      // Open the new file
+      handleFileSelect(newFile);
     } catch (error) {
       console.error('Failed to create file:', error);
     }
-  }, [currentProject, createFile]);
+  }, [currentProject, createFile, handleFileSelect]);
 
-  // Helper function to determine language from file extension
   const getLanguageFromExtension = (fileName) => {
     const extension = fileName.split('.').pop()?.toLowerCase();
     const languageMap = {
@@ -130,9 +125,18 @@ function Editor() {
       'c': 'c',
       'html': 'html',
       'css': 'css',
+      'scss': 'scss',
       'json': 'json',
       'md': 'markdown',
-      'txt': 'text'
+      'xml': 'xml',
+      'sql': 'sql',
+      'php': 'php',
+      'rb': 'ruby',
+      'go': 'go',
+      'rs': 'rust',
+      'sh': 'shell',
+      'yml': 'yaml',
+      'yaml': 'yaml'
     };
     return languageMap[extension] || 'text';
   };
@@ -157,10 +161,12 @@ function Editor() {
     }
   };
 
+  // Show loading state
   if (isLoading) {
     return <Loading message="Loading project..." />;
   }
 
+  // Show error state if project not found
   if (!currentProject) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -189,7 +195,7 @@ function Editor() {
             ☰
           </button>
           <span className="text-white font-medium">
-            {currentProject.name}
+            {currentProject?.name || 'Untitled Project'}
           </span>
           {unsavedChanges && (
             <span className="text-orange-400 text-sm">• Unsaved changes</span>
@@ -197,6 +203,8 @@ function Editor() {
         </div>
         
         <div className="ml-auto flex items-center space-x-2">
+          {/* Add CollaboratorList here */}
+          <CollaboratorList />
           <EditorToolbar 
             onSave={handleSave}
             onCreateFile={handleCreateFile}
@@ -261,7 +269,7 @@ function Editor() {
             ) : (
               <div className="h-full flex items-center justify-center text-gray-400">
                 <div className="text-center">
-                  <div className="text-6xl mb-4">📄</div>
+                  <div className="text-6xl mb-4">��</div>
                   <p className="text-xl">Select a file to start editing</p>
                   <p className="text-sm mt-2">Choose a file from the sidebar to begin coding</p>
                 </div>
@@ -283,4 +291,5 @@ function Editor() {
     </div>
   );
 }
+
 export default Editor;

@@ -6,12 +6,15 @@ export const fileService = {
   // Create a new file
   async createFile(fileData) {
     try {
+      console.log("🔍 [DEBUG] FileService: Creating file with data:", fileData);
       const response = await api.post('/files', fileData);
+      console.log("🔍 [DEBUG] FileService: File creation response:", response.data);
       const { file, message } = response.data;
       
       toast.success(message || 'File created successfully!');
       return file;
     } catch (error) {
+      console.error("❌ [DEBUG] FileService: File creation error:", error);
       const errorMessage = error.response?.data?.message || 'Failed to create file';
       toast.error(errorMessage);
       throw new Error(errorMessage);
@@ -21,9 +24,12 @@ export const fileService = {
   // Get all files in a project
   async getProjectFiles(projectId) {
     try {
+      console.log("🔍 [DEBUG] FileService: Getting project files for project:", projectId);
       const response = await api.get(`/files/project/${projectId}`);
+      console.log("🔍 [DEBUG] FileService: Project files response:", response.data);
       return response.data.files;
     } catch (error) {
+      console.error("❌ [DEBUG] FileService: Get project files error:", error);
       const errorMessage = error.response?.data?.message || 'Failed to fetch files';
       throw new Error(errorMessage);
     }
