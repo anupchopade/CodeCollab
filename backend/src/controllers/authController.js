@@ -1,7 +1,9 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
-
+import { sendMail } from "../utils/mailer.js";
+import User from '../models/User.js'
+import crypto from "crypto";
+import Otp from '../models/Otp.js';
 //Register a new user
 export const register=async (req,res)=>{
     try{
@@ -126,3 +128,113 @@ export const updateProfile = async (req, res) => {
       res.status(500).json({ message: 'Internal server error' });
     }
   };
+
+
+
+
+
+
+
+
+
+
+
+
+  //OTP part
+const hashOtp=(otp)=>{
+    const secret=process.env.OTP_SECRET_SALT || '';
+    return crypto.createHash('sha256').update(otp+secret).digest('hex');
+}
+
+
+  //Send OTP
+ // Send OTP
+export const sendOtp = async (req, res) => {
+    try {
+      let { email } = req.body;
+      if (!email) return res.status(400).json({ error: "Email is required" });
+  
+      const normalizedEmail = email.toLowerCase().trim();
+      const now = new Date();
+      const existing = await Otp.findOne({ email: normalizedEmail });
+
+      if (existing && now - existing.lastSent < 45 * 1000) {
+        return res.status(429).json({ error: "Please wait 45s before requesting a new OTP" });
+      }
+      const otp = crypto.randomInt(100000, 999999).toString();
+      const otpHash = hashOtp(otp);
+
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+      await Otp.findOneAndUpdate(
+        { email: normalizedEmail },
+        { otpHash, attempts: 0, lastSent: now, expiresAt },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+  
+      await sendMail(normalizedEmail, otp);
+      res.json({ message: "OTP sent to email" });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Error sending OTP" });
+    }
+};
+
+
+  //VERIFY OTP
+export const verifyOtp = async (req, res) => {
+  try {
+    let { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ error: "Email and OTP are required" });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const doc = await Otp.findOne({ email: normalizedEmail });
+
+    if (!doc) {
+      return res.status(400).json({ error: "OTP expired or not found" });
+    }
+
+    if (doc.expiresAt.getTime() < Date.now()) {
+      await Otp.deleteOne({ email: normalizedEmail });
+      return res.status(400).json({ error: "OTP expired" });
+    }
+
+    if (doc.attempts >= 5) {
+      await Otp.deleteOne({ email: normalizedEmail });
+      return res.status(429).json({ error: "Too many failed attempts. Request a new OTP." });
+    }
+
+    const providedHash = hashOtp(otp);
+    if (doc.otpHash !== providedHash) {
+      await Otp.updateOne(
+        { email: normalizedEmail },
+        { $inc: { attempts: 1 } }
+      );
+      return res.status(400).json({ error: "Invalid OTP" });
+    }
+
+    await Otp.deleteOne({ email: normalizedEmail });
+
+    const token = jwt.sign(
+      { email: normalizedEmail },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    res.json({ message: "OTP verified", token });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error verifying OTP" });
+  }
+};
+  // ✅ Periodic cleanup for expired OTPs
+// setInterval(() => {
+//     const now = Date.now();
+//     for (const [email, record] of otpStore.entries()) {
+//       if (record.expires < now) {
+//         otpStore.delete(email);
+//       }
+//     }
+//   }, 5 * 60 * 1000);
