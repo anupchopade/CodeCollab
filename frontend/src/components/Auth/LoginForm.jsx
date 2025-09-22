@@ -11,6 +11,8 @@ const emailRegex =
 const LoginForm = ({
   onSuccess,          // optional callback(user)
   onError,            // optional callback(errorMessage)
+  onSubmit,           // optional external submit handler (page-level)
+  isLoading = false,  // optional external loading state
   redirectTo = "/",   // where to go after login (if your AuthContext handles navigation)
 }) => {
   const { login, loading: authLoading } = useAuth?.() || {};
@@ -40,8 +42,19 @@ const LoginForm = ({
     try {
       setSubmitting(true);
       setServerError("");
+      // If an external submit handler is provided (e.g., page handles navigation), use it
+      if (typeof onSubmit === 'function') {
+        await onSubmit({ email: form.email, password: form.password, remember: form.remember });
+        return;
+      }
       if (login) {
         const result = await login({ email: form.email, password: form.password });
+        if (result?.otpRequired) {
+          // Let the page handle navigation when using external handler.
+          // If no external handler, surface a generic message.
+          setServerError("Check your email for the OTP to continue.");
+          return;
+        }
         if (result.success) {
           onSuccess?.(result.user);
         } else {
@@ -121,7 +134,7 @@ const LoginForm = ({
         <Button
           type="submit"
           className="w-full"
-          loading={submitting || authLoading}
+          loading={submitting || authLoading || isLoading}
           disabled={!isValid}
         >
           Sign in

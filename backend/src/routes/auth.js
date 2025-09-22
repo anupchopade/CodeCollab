@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, login, getProfile, updateProfile } from '../controllers/authController.js';
+import { register, login, getProfile, updateProfile, forgotPassword, resetPassword } from '../controllers/authController.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { sendOtp,verifyOtp } from '../controllers/authController.js';
 
@@ -11,6 +11,8 @@ router.post('/register',register);
 router.post('/login',login);
 router.post("/send-otp", sendOtp);
 router.post("/verify-otp", verifyOtp);
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 
 //protected routes (require authentication)
 router.get('/profile', authenticateToken, getProfile);

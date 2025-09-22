@@ -13,6 +13,10 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Editor from './pages/Editor';
+import OTPVerificationPage from './pages/OTPVerificationPage';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+import OTPTestPage from './pages/OTPTestPage';
 import NotFound from './pages/NotFound';
 
 // Components
@@ -92,6 +96,26 @@ function App() {
                         <Register />
                       </PublicRoute>
                     } 
+                  />
+
+                  <Route 
+                    path="/forgot-password" 
+                    element={<ForgotPassword />} 
+                  />
+
+                  <Route 
+                    path="/reset-password" 
+                    element={<ResetPassword />} 
+                  />
+
+                  <Route 
+                    path="/verify-otp" 
+                    element={<OTPVerificationPage />} 
+                  />
+
+                  <Route 
+                    path="/test-otp" 
+                    element={<OTPTestPage />} 
                   />
 
                   {/* Protected Routes */}

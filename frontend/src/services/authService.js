@@ -7,9 +7,15 @@ export const authService = {
   async register(userData) {
     try {
       const response = await api.post('/auth/register', userData);
-      const { token, user, message } = response.data;
-      
-      // Store token and user data
+      const data = response.data;
+      if (data.otpRequired) {
+        // Defer storing token/user until OTP verification
+        toast.success(data.message || 'OTP sent to your email');
+        return { otpRequired: true, sessionId: data.sessionId, email: data.email };
+      }
+
+      const { token, user, message } = data;
+      // Store token and user data (fallback case)
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
       
@@ -22,12 +28,41 @@ export const authService = {
     }
   },
 
+  // Forgot password - request OTP
+  async forgotPassword(email) {
+    try {
+      const response = await api.post('/auth/forgot-password', { email });
+      return response.data;
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Failed to request password reset';
+      toast.error(errorMessage);
+      throw new Error(errorMessage);
+    }
+  },
+
+  // Reset password with sessionId + OTP + newPassword
+  async resetPassword({ sessionId, otp, newPassword }) {
+    try {
+      const response = await api.post('/auth/reset-password', { sessionId, otp, newPassword });
+      return response.data;
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Failed to reset password';
+      toast.error(errorMessage);
+      throw new Error(errorMessage);
+    }
+  },
+
   // Login user
   async login(credentials) {
     try {
       const response = await api.post('/auth/login', credentials);
-      const { token, user, message } = response.data;
+      const data = response.data;
       
+    if (data.otpRequired) {
+      // Do not store token/user yet
+      return { otpRequired: true, sessionId: data.sessionId, email: data.email, message: data.message };
+    }
+    const { token, user, message } = data;
       // Store token and user data
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));

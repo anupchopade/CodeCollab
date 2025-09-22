@@ -40,9 +40,17 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       setLoading(true);
-      const { token: newToken, user: userData } = await authService.login(credentials);
-      setToken(newToken);
-      setUser(userData);
+      const result = await authService.login(credentials);
+      if (result?.otpRequired) {
+        // Do not set token/user yet
+        return { success: true, otpRequired: true, sessionId: result.sessionId, email: result.email };
+      }
+      const { token: newToken, user: userData } = result || {};
+      if (newToken && userData) {
+        setToken(newToken);
+        setUser(userData);
+        return { success: true };
+      }
       return { success: true };
     } catch (error) {
       console.error('Login error:', error);
@@ -51,14 +59,38 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
+  const completeLogin = async (token, userFromVerify) => {
+    // Store token
+    localStorage.setItem('token', token);
+    setToken(token);
+  
+    // Prefer user from verify; if not, fetch profile
+    try {
+      const userData = userFromVerify || await authService.getProfile();
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      return { success: true };
+    } catch (e) {
+      console.error('Finalize login profile fetch error:', e);
+      return { success: false, error: e.message };
+    }
+  };
 
   const register = async (userData) => {
     try {
       setLoading(true);
-      const { token: newToken, user: newUser } = await authService.register(userData);
-      setToken(newToken);
-      setUser(newUser);
-      return { success: true };
+      const result = await authService.register(userData);
+      if (result?.otpRequired) {
+        // Defer state update until OTP verification
+        return { success: true, otpRequired: true, sessionId: result.sessionId, email: result.email };
+      }
+      const { token: newToken, user: newUser } = result || {};
+      if (newToken && newUser) {
+        setToken(newToken);
+        setUser(newUser);
+        return { success: true };
+      }
+      return { success: false, error: 'Unexpected register response' };
     } catch (error) {
       console.error('Registration error:', error);
       return { success: false, error: error.message };
@@ -93,6 +125,7 @@ export const AuthProvider = ({ children }) => {
       register, 
       logout, 
       updateProfile,
+      completeLogin,
       isAuthenticated: authService.isAuthenticated()
     }}>
       {children}

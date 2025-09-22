@@ -16,6 +16,18 @@ function Login() {
     
       try {
         const result = await login({ email: formData.email, password: formData.password });
+
+        if (result?.otpRequired) {
+          navigate('/verify-otp', {
+            state: {
+              sessionId: result.sessionId,
+              email: result.email,
+              redirectTo: '/dashboard',
+              purpose: 'login'
+            }
+          });
+          return;
+        }
         if (result.success) {
           navigate('/dashboard');
         } else {

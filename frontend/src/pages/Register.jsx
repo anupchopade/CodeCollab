@@ -20,7 +20,16 @@ function Register() {
         email: formData.email, 
         password: formData.password 
       });
-      if (result.success) {
+      if (result?.otpRequired) {
+        navigate('/verify-otp', {
+          state: {
+            sessionId: result.sessionId,
+            email: result.email,
+            redirectTo: '/dashboard',
+            purpose: 'verification'
+          }
+        });
+      } else if (result.success) {
         navigate('/dashboard');
       } else {
         setError(result.error || 'Registration failed. Please try again.');

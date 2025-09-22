@@ -32,7 +32,7 @@ const StrengthBar = ({ value }) => {
   );
 };
 
-const RegisterForm = ({ onSuccess, onError, redirectTo = "/dashboard" }) => {
+const RegisterForm = ({ onSuccess, onError, onSubmit, isLoading = false, redirectTo = "/dashboard" }) => {
   const { register: registerUser, loading: authLoading } = useAuth?.() || {};
   const [form, setForm] = useState({
     email: "",
@@ -68,12 +68,21 @@ const RegisterForm = ({ onSuccess, onError, redirectTo = "/dashboard" }) => {
     try {
       setSubmitting(true);
       setServerError("");
+      // If page-level onSubmit provided, delegate (handles navigation to OTP)
+      if (typeof onSubmit === 'function') {
+        await onSubmit({ email: form.email, password: form.password });
+        return;
+      }
       if (registerUser) {
         const result = await registerUser({ 
           username: form.email.split('@')[0], // Use email prefix as username
           email: form.email, 
           password: form.password 
         });
+        if (result?.otpRequired) {
+          setServerError("Check your email for the OTP to continue.");
+          return;
+        }
         if (result.success) {
           onSuccess?.(result.user);
         } else {
@@ -174,7 +183,7 @@ const RegisterForm = ({ onSuccess, onError, redirectTo = "/dashboard" }) => {
         <Button
           type="submit"
           className="w-full"
-          loading={submitting || authLoading}
+          loading={submitting || authLoading || isLoading}
           disabled={!isValid}
         >
           Create account
