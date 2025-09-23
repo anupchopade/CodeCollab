@@ -6,8 +6,19 @@ export const fileService = {
   // Create a new file
   async createFile(fileData) {
     try {
-      console.log("🔍 [DEBUG] FileService: Creating file with data:", fileData);
-      const response = await api.post('/files', fileData);
+      const normalized = { ...fileData };
+      // Ensure required fields are present for backend validation
+      if (!normalized.name && normalized.path) {
+        normalized.name = String(normalized.path).split('/').pop();
+      }
+      if (!normalized.path && normalized.name) {
+        normalized.path = normalized.name;
+      }
+      if (!normalized.language) {
+        normalized.language = 'javascript';
+      }
+      console.log("🔍 [DEBUG] FileService: Creating file with data:", normalized);
+      const response = await api.post('/files', normalized);
       console.log("🔍 [DEBUG] FileService: File creation response:", response.data);
       const { file, message } = response.data;
       
@@ -79,7 +90,15 @@ export const fileService = {
   // Create a directory
   async createDirectory(directoryData) {
     try {
-      const response = await api.post('/files/directory', directoryData);
+      const normalized = { ...directoryData };
+      if (!normalized.name && normalized.path) {
+        normalized.name = String(normalized.path).split('/').pop();
+      }
+      if (!normalized.path && normalized.name) {
+        normalized.path = normalized.name;
+      }
+      console.log("🔍 [DEBUG] FileService: Creating directory with data:", normalized);
+      const response = await api.post('/files/directory', normalized);
       const { directory, message } = response.data;
       
       toast.success(message || 'Directory created successfully!');

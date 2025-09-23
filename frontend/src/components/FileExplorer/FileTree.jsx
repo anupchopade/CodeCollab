@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { Plus, File } from "lucide-react";
+import { Plus } from "lucide-react";
 import FolderItem from "./FolderItem";
 import FileItem from "./FileItem";
 import { useProject } from "../../context/ProjectContext";
+import NewFileModal from "./NewFileModal";
+import fileService from "../../services/fileService";
+
 
 const FileTree = ({ project, files = [], activeFile, onFileSelect, onCreateFile }) => {
   const [expanded, setExpanded] = useState({});
-  const [showNewFileInput, setShowNewFileInput] = useState(false);
-  const [newFileName, setNewFileName] = useState('');
   const { refreshProjectFiles } = useProject();
+  const [showNewModal, setShowNewModal] = useState(false);
 
   // Listen for real-time file events
   useEffect(() => {
@@ -30,6 +32,7 @@ const FileTree = ({ project, files = [], activeFile, onFileSelect, onCreateFile 
         console.log("🔍 [DEBUG] FileTree: Project IDs don't match - skipping refresh");
       }
     };
+
 
     const handleFileDeleted = (event) => {
       console.log("🔍 [DEBUG] FileTree: handleFileDeleted called");
@@ -68,22 +71,36 @@ const FileTree = ({ project, files = [], activeFile, onFileSelect, onCreateFile 
     }
   };
 
-  const handleCreateFile = () => {
-    if (newFileName.trim() && onCreateFile) {
-      onCreateFile(newFileName.trim());
-      setNewFileName('');
-      setShowNewFileInput(false);
-    }
+  const handleRename = async (file) => {
+    const newName = prompt('Rename to:', file?.name || '');
+    if (!newName || newName === file.name) return;
+    try {
+      await fileService.updateFile(file._id, { name: newName });
+      await refreshProjectFiles();
+    } catch {}
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleCreateFile();
-    } else if (e.key === 'Escape') {
-      setShowNewFileInput(false);
-      setNewFileName('');
-    }
+  const handleDelete = async (file) => {
+    if (!window.confirm(`Delete ${file?.name}?`)) return;
+    try {
+      await fileService.deleteFile(file._id);
+      await refreshProjectFiles();
+    } catch {}
   };
+
+  const handleDuplicate = async (file) => {
+    const base = file.name;
+    const copyName = prompt('Duplicate as:', `${base.replace(/(\.[^.]*)?$/, '')}-copy$1`);
+    if (!copyName) return;
+    try {
+      const projectId = project?._id || project?.id;
+      const path = copyName;
+      await fileService.createFile({ projectId, name: copyName, path, language: file.language || 'javascript' });
+      await refreshProjectFiles();
+    } catch {}
+  };
+
+  // Use modal instead of inline inputs
 
   // If no files, show empty state with create button
   if (!files || files.length === 0) {
@@ -92,48 +109,51 @@ const FileTree = ({ project, files = [], activeFile, onFileSelect, onCreateFile 
         <p className="text-sm">No files in this project</p>
         <p className="text-xs mt-1 mb-3">Create a file to get started</p>
         
-        {!showNewFileInput ? (
-          <button
-            onClick={() => setShowNewFileInput(true)}
-            className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
-          >
-            <Plus size={16} />
-            New File
-          </button>
-        ) : (
-          <div className="space-y-2">
-            <input
-              type="text"
-              value={newFileName}
-              onChange={(e) => setNewFileName(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder="filename.js"
-              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              autoFocus
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={handleCreateFile}
-                className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
-              >
-                Create
-              </button>
-              <button
-                onClick={() => {
-                  setShowNewFileInput(false);
-                  setNewFileName('');
-                }}
-                className="px-3 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
+        <button
+          onClick={() => setShowNewModal(true)}
+          className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+        >
+          <Plus size={16} />
+          New
+        </button>
+
+        <NewFileModal
+          isOpen={showNewModal}
+          onClose={() => setShowNewModal(false)}
+          onCreate={async ({ name, type }) => {
+            if (!name || !project) return;
+            try {
+              const projectId = project._id || project.id;
+              if (type === 'folder') {
+                await fileService.createDirectory({ projectId, path: name });
+              } else {
+                await fileService.createFile({ projectId, name });
+              }
+              await refreshProjectFiles();
+            } finally {
+              setShowNewModal(false);
+            }
+          }}
+        />
       </div>
     );
   }
-
+  const handleCreate = async ({ name, type }) => {
+    if (!name || !project) return;
+    try {
+      const projectId = project._id || project.id;
+      const cleanName = name.replace(/^\/+/, '').trim();
+      const path = cleanName; // root-level path for now
+      if (type === 'folder') {
+        await fileService.createDirectory({ projectId, name: cleanName, path });
+      } else {
+        await fileService.createFile({ projectId, name: cleanName, path, language: 'javascript' });
+      }
+      await refreshProjectFiles();
+    } finally {
+      setShowNewModal(false);
+    }
+  };
   // Simple file list for now (can be enhanced later with folder structure)
   return (
     <div className="p-2">
@@ -142,44 +162,32 @@ const FileTree = ({ project, files = [], activeFile, onFileSelect, onCreateFile 
           Files ({files.length})
         </div>
         <button
-          onClick={() => setShowNewFileInput(true)}
+          onClick={() => setShowNewModal(true)}
           className="p-1 text-gray-400 hover:text-white transition-colors"
-          title="New File"
+          title="New"
         >
           <Plus size={16} />
         </button>
       </div>
-      
-      {showNewFileInput && (
-        <div className="mb-2 p-2 bg-gray-700 rounded">
-          <input
-            type="text"
-            value={newFileName}
-            onChange={(e) => setNewFileName(e.target.value)}
-            onKeyDown={handleKeyPress}
-            placeholder="filename.js"
-            className="w-full px-2 py-1 text-sm bg-gray-800 text-white border border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            autoFocus
-          />
-          <div className="flex gap-1 mt-2">
-            <button
-              onClick={handleCreateFile}
-              className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
-            >
-              Create
-            </button>
-            <button
-              onClick={() => {
-                setShowNewFileInput(false);
-                setNewFileName('');
-              }}
-              className="px-2 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
+
+      <NewFileModal
+        isOpen={showNewModal}
+        onClose={() => setShowNewModal(false)}
+        onCreate={async ({ name, type }) => {
+          if (!name || !project) return;
+          try {
+            const projectId = project._id || project.id;
+            if (type === 'folder') {
+              await fileService.createDirectory({ projectId, path: name });
+            } else {
+              await fileService.createFile({ projectId, name });
+            }
+            await refreshProjectFiles();
+          } finally {
+            setShowNewModal(false);
+          }
+        }}
+      />
       
       {files.map((file) => (
         <FileItem 
@@ -187,6 +195,9 @@ const FileTree = ({ project, files = [], activeFile, onFileSelect, onCreateFile 
           file={file}
           isActive={activeFile && activeFile._id === file._id}
           onClick={() => handleFileClick(file)}
+          onRename={handleRename}
+          onDelete={handleDelete}
+          onDuplicate={handleDuplicate}
         />
       ))}
     </div>
